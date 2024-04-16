@@ -1,6 +1,6 @@
 # Импортируем необходимые классы.
 import logging
-from telegram.ext import Application, MessageHandler, filters
+from telegram.ext import Application, MessageHandler, filters, CommandHandler
 from config import BOT_TOKEN
 
 # Запускаем логгирование
@@ -9,6 +9,20 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+# Напишем соответствующие функции.
+# Их сигнатура и поведение аналогичны обработчикам текстовых сообщений.
+async def start(update, context):
+    """Отправляет сообщение когда получена команда /start"""
+    user = update.effective_user
+    await update.message.reply_html(
+        rf"Привет {user.mention_html()}! Я эхо-бот. Напишите мне что-нибудь, и я пришлю это назад!",
+    )
+
+
+async def help_command(update, context):
+    """Отправляет сообщение когда получена команда /help"""
+    await update.message.reply_text("Я пока не умею помогать... Я только ваше эхо.")
 
 
 # Определяем функцию-обработчик сообщений.
@@ -27,15 +41,12 @@ def main():
     # Вместо слова "TOKEN" надо разместить полученный от @BotFather токен
     application = Application.builder().token(BOT_TOKEN).build()
 
-    # Создаём обработчик сообщений типа filters.TEXT
-    # из описанной выше асинхронной функции echo()
-    # После регистрации обработчика в приложении
-    # эта асинхронная функция будет вызываться при получении сообщения
-    # с типом "текст", т. е. текстовых сообщений.
-    text_handler = MessageHandler(filters.TEXT, echo)
+    # Сначала регистрируем команды
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help_command))
 
-    # Регистрируем обработчик в приложении.
-    application.add_handler(text_handler)
+    # Затем регистрируем обработчик прочих (т.е.) текстовых сообщений.
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     # Запускаем приложение.
     application.run_polling()
